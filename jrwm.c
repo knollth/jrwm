@@ -538,6 +538,11 @@ static void wm_handle_output(void *data, struct river_window_manager_v1 *obj, st
 		if (space->output == NULL)
 			space->output = output;
 	}
+	struct Seat *seat;
+	wl_list_for_each(seat, &wm.seats, link) {
+		if (output == seat->focused->output)
+			output->active = seat->focused;
+	}
 
 	river_output_v1_add_listener(output->obj, &river_output_listener, output);
 	river_layer_shell_output_v1_add_listener(output->ls, &ls_output_listener, output);
