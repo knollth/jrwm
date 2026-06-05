@@ -39,12 +39,14 @@ include:
 
 -   Better multi-Space support: more Spaces, better Space/Output assignment,
     dynamic/configurable Spaces
+-   Better floating window support, at least to improve the experience with
+    child windows
 -   Behavioral tweaks to more closely match other WMs and expectations around
     window movement, focus, output management, etc.
--   Optional focus-follows-pointer and pointer-follows-focus behavior
+-   (Optional) focus-follows-pointer and pointer-follows-focus behavior
 -   Actual configuration, probably via IPC or API
--   Additional minor, nice behaviors: output scaling, libinput config,
-    background color
+-   Additional minor, nice behaviors: output scaling, libinput config (right
+    clicks!), background color
 
 In addition, the WM is very untested, and probably somewhat broken, with
 multiple outputs.

@@ -648,8 +648,6 @@ static void place_child_window(struct Window *window, struct Rect bounds) {
 		window->layout.x = bounds.width - window->layout.width;
 	if (window->layout.y + window->layout.height > bounds.height)
 		window->layout.y = bounds.height - window->layout.height;
-
-	// TODO: limit the window size
 	if (window->layout.x < bounds.x)
 		window->layout.x = bounds.x;
 	if (window->layout.y < bounds.y)
