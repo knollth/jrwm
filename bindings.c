@@ -189,11 +189,10 @@ static void binding_move_next(struct Seat *seat, union Arg arg) {
 			next = true;
 	}
 	wl_list_remove(&curr->link);
-	if (target != NULL) {
+	if (target != NULL)
 		wl_list_insert(&target->link, &curr->link);
-	} else {
+	else
 		wl_list_insert(&wm.windows, &curr->link);
-	}
 }
 
 static void binding_move_prev(struct Seat *seat, union Arg arg) {
@@ -213,11 +212,10 @@ static void binding_move_prev(struct Seat *seat, union Arg arg) {
 			next = true;
 	}
 	wl_list_remove(&curr->link);
-	if (target != NULL) {
+	if (target != NULL)
 		wl_list_insert(target->link.prev, &curr->link);
-	} else {
+	else
 		wl_list_insert(wm.windows.prev, &curr->link);
-	}
 }
 
 static void binding_toggle_maximize(struct Seat *seat, union Arg arg) {
@@ -275,9 +273,9 @@ static void xkb_binding_create(struct Seat *seat, uint32_t mods, xkb_keysym_t ke
 
 extern void init_xkb_bindings(struct Seat *seat) {
 	int i;
-	for (i = 0; binds[i].dispatch != NULL; i++) {
-		xkb_binding_create(seat, binds[i].mod, binds[i].key, binds[i].dispatch, binds[i].arg);
-	}
+	for (i = 0; binds[i].dispatch != NULL; i++)
+		xkb_binding_create(seat, binds[i].mod, binds[i].key,
+				binds[i].dispatch, binds[i].arg);
 }
 
 extern void enable_xkb_bindings(struct Seat *seat) {

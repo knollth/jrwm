@@ -37,17 +37,7 @@ struct river_layer_shell_v1 *layer_shell_v1;
 static void output_handle_removed(void *data, struct river_output_v1 *obj) {
 	struct Output *output = data;
 
-	// TODO: move me out
-	struct Output *replacement = NULL, *r;
-	wl_list_for_each(r, &wm.outputs, link)
-		if (r != output)
-			replacement = r;
-
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link)
-		if (space->output == output)
-			space->output = replacement;
-
+	replace_output(output);
 	river_layer_shell_output_v1_destroy(output->ls);
 	river_output_v1_destroy(output->obj);
 	wl_list_remove(&output->link);
@@ -80,23 +70,7 @@ const struct river_layer_shell_output_v1_listener ls_output_listener = {
 static void window_handle_closed(void *data, struct river_window_v1 *obj) {
 	struct Window *window = data;
 
-	// TODO: move me out
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
-		if (space->maximized == window)
-			space->maximized = NULL;
-		if (space->fullscreen == window)
-			space->fullscreen = NULL;
-		if (space->focused == window) {
-			struct Window *r, *replacement = NULL;
-			wl_list_for_each(r, &wm.windows, link) {
-				if (r->space == space && r != window)
-					replacement = r;
-			}
-			space->focused = replacement;
-		}
-	}
-
+	replace_window(window);
 	river_window_v1_destroy(window->obj);
 	wl_list_remove(&window->link);
 	free(window);
@@ -133,7 +107,6 @@ static void window_handle_unmaximize_requested(void *data, struct river_window_v
 		window->unmaximize = true;
 	}
 }
-
 
 static void window_handle_dimensions(void *data, struct river_window_v1 *obj, int32_t width, int32_t height) {
 	struct Window *window = data;
@@ -231,19 +204,7 @@ static void wm_handle_output(void *data, struct river_window_manager_v1 *obj, st
 	output->obj = river_output;
 	output->ls = river_layer_shell_v1_get_output(layer_shell_v1, output->obj);
 
-	// TODO: move me out
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
-		output->active = space;
-		if (space->output == NULL)
-			space->output = output;
-	}
-	struct Seat *seat;
-	wl_list_for_each(seat, &wm.seats, link) {
-		if (output == seat->focused->output)
-			output->active = seat->focused;
-	}
-
+	place_output(output);
 	river_output_v1_add_listener(output->obj, &river_output_listener, output);
 	river_layer_shell_output_v1_add_listener(output->ls, &ls_output_listener, output);
 	wl_list_insert(&wm.outputs, &output->link);
@@ -257,12 +218,7 @@ static void wm_handle_seat(void *data, struct river_window_manager_v1 *obj, stru
 	wl_list_init(&seat->xkb_bindings);
 	init_xkb_bindings(seat);
 
-	// TODO: move me out
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
-		seat->focused = space;
-	}
-
+	place_seat(seat);
 	river_seat_v1_add_listener(seat->obj, &river_seat_listener, seat);
 	river_layer_shell_seat_v1_add_listener(seat->ls, &ls_seat_listener, seat);
 	wl_list_insert(&wm.seats, &seat->link);
@@ -274,15 +230,7 @@ static void wm_handle_window(void *data, struct river_window_manager_v1 *obj, st
 	window->node = river_window_v1_get_node(window->obj);
 	window->set_capabilities = true;
 
-	// TODO: move me out
-	struct Seat *seat;
-	wl_list_for_each(seat, &wm.seats, link) {
-		struct Space *space = seat->focused;
-		window->space = space;
-		if (space->maximized == NULL && space->fullscreen == NULL)
-			space->focused = window;
-	}
-
+	place_window(window);
 	river_window_v1_add_listener(window->obj, &river_window_listener, window);
 	wl_list_insert(&wm.windows, &window->link);
 }
@@ -290,13 +238,13 @@ static void wm_handle_window(void *data, struct river_window_manager_v1 *obj, st
 static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *obj) {
 	struct Window *window;
 	struct Seat *seat;
-	struct Output *output;
+	struct Space *space;
 
 	wl_list_for_each(window, &wm.windows, link) {
 		window_do_deferred(window);
 	}
-	wl_list_for_each(output, &wm.outputs, link) {
-		manage_output(output);
+	wl_list_for_each(space, &wm.spaces, link) {
+		manage_space(space);
 	}
 	wl_list_for_each(seat, &wm.seats, link) {
 		enable_xkb_bindings(seat);
@@ -306,9 +254,9 @@ static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *o
 }
 
 static void wm_handle_render_start(void *data, struct river_window_manager_v1 *window_manager_v1) {
-	struct Output *output;
-	wl_list_for_each(output, &wm.outputs, link) {
-		render_output(output);
+	struct Space *space;
+	wl_list_for_each(space, &wm.spaces, link) {
+		render_space(space);
 	}
 	river_window_manager_v1_render_finish(window_manager_v1);
 }

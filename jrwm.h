@@ -30,57 +30,58 @@ struct Rect {
 	int32_t x, y, width, height;
 };
 
-// A Space is an abstract collection of Windows on an Output.
-// The Windows may not exist.  The Output may not either.
-// But we need a valid Space for nearly everything in the WM to point at.
+// A Space represents a collection of Windows on an Output.
+// Space is the "clearing-house" type for the WM; there MUST be at least one
+// Space for everything else to point at (and there SHOULD be at least one Space
+// per Output).
 struct Space {
-	struct wl_list link; // WindowManager.spaces
-	struct Output *output;
-	struct Window *focused;
+	struct wl_list link;    // WindowManager.spaces
+	struct Output *output;  // May be null
+	struct Window *focused; // May be null
 
-	struct Window *fullscreen;  // These two are usually null
-	struct Window *maximized;   // and mostly just impact layout
+	struct Window *fullscreen;  // Usually null (TODO: remove?)
+	struct Window *maximized;   // Usually null (TODO: remove?)
 };
 
 // An Output is like an actual physical display.
 struct Output {
-	struct wl_list link; // WindowManager.outputs
+	struct wl_list link;    // WindowManager.outputs
 	struct river_output_v1 *obj;
 	struct river_layer_shell_output_v1 *ls;
 
-	struct Rect windowed;  // Non-exclusive area of the Output
+	struct Rect windowed;   // Non-exclusive area of the Output
 
-	struct Space *active;
+	struct Space *active;   // Non-null
 };
 
 // A Window is a rectangle under management.
 struct Window {
-	struct wl_list link; // WindowManager.windows
+	struct wl_list link;    // WindowManager.windows
 	struct river_window_v1 *obj;
 	struct river_node_v1 *node;
 
-	// tasks for the manage sequence
-	bool set_capabilities; // window_v1.set_capabilities
-	bool close;            // window_v1.close
-	bool fullscreen;       // window_v1.inform_fullscreen
-	bool exit_fullscreen;  // window_v1.inform_not_fullscreen
-	bool maximize;         // window_v1.inform_maximized
-	bool unmaximize;       // window_v1.inform_unmaximized
+	// Deferred tasks for the manage sequence
+	bool set_capabilities;  // window_v1.set_capabilities
+	bool close;             // window_v1.close
+	bool fullscreen;        // window_v1.inform_fullscreen
+	bool exit_fullscreen;   // window_v1.inform_not_fullscreen
+	bool maximize;          // window_v1.inform_maximized
+	bool unmaximize;        // window_v1.inform_unmaximized
 
-	// information for render sequence
+	// Information for the render sequence (TODO: necessary?)
 	struct Rect layout;
 
-	struct Space *space;
+	struct Space *space;    // Non-null
 };
 
 // A Seat is a collection of input devices.
 struct Seat {
-	struct wl_list link; // WindowManager.seats
+	struct wl_list link;    // WindowManager.seats
 	struct river_seat_v1 *obj;
 	struct river_layer_shell_seat_v1 *ls;
 	struct wl_list xkb_bindings;  // XkbBinding
 
-	struct Space *focused;
+	struct Space *focused;  // Non-null
 };
 
 struct WindowManager {
@@ -100,13 +101,24 @@ extern struct river_xkb_bindings_v1 *xkb_bindings_v1;
 extern struct river_layer_shell_v1 *layer_shell_v1;
 
 
-// manage.c
+// layout.c
 
+// Called on creation of objects to manage internal pointers
+extern void place_output(struct Output *);
+extern void place_window(struct Window *);
+extern void place_seat(struct Seat *);
+
+// Called on deletion of objects
+extern void replace_output(struct Output *);
+extern void replace_window(struct Window *);
+
+// Called during the manage sequence
 extern void seat_do_focus(struct Seat *);
 extern void window_do_deferred(struct Window *);
+extern void manage_space(struct Space *);
 
-extern void manage_output(struct Output *);
-extern void render_output(struct Output *);
+// Called during the render sequence
+extern void render_space(struct Space *);
 
 
 // bindings.c

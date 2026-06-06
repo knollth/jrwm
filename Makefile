@@ -9,7 +9,7 @@ PROTO_DIR	= ./protocol
 
 CFLAGS	= -g -O2 -Wall -I$(PROTO_DIR) -lwayland-client -lxkbcommon
 
-CFILES	= jrwm.c manage.c bindings.c $(PROTOC)
+CFILES	= jrwm.c layout.c bindings.c $(PROTOC)
 HFILES	= jrwm.h $(PROTOH)
 
 

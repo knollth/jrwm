@@ -1,4 +1,4 @@
-// manage.c -- Core window layout logic for JrWM
+// layout.c -- Core window layout+rendering logic for JrWM
 
 // This file is responsible for the layout and rendering of windows, making it
 // responsible for much of the core "look and feel" of the WM.
@@ -33,7 +33,7 @@ static int borderpx = 2;
 static float splitratio = 0.52;
 
 
-// The main WM loops, which lay out windows and render borders.
+// Private functions for window management and rendering
 
 static void layout_space(struct Space *space, struct Rect bounds) {
 	int count = 0, w = 0, rightwidth = bounds.width, rightheight = bounds.height;
@@ -77,10 +77,92 @@ static void layout_space(struct Space *space, struct Rect bounds) {
 	}
 }
 
+// Return the Output on which this Space is active, or NULL if it is not active
+// on any Output.
+static struct Output *active_output(struct Space *space) {
+	struct Output *output = NULL;
+	if (space->output != NULL && space->output->active == space)
+		output = space->output;
+	return output;
+}
+
 static bool valid_rect(struct Rect r) {
 	return r.width >= 0 && r.height >= 0;
 }
 
+
+// Handle creation/deletion of core objects
+// (focus Seats, associate Spaces with Outputs, place Windows in Spaces, etc.)
+
+extern void place_output(struct Output *output) {
+	struct Space *space;
+	wl_list_for_each(space, &wm.spaces, link) {
+		output->active = space;
+		if (space->output == NULL)
+			space->output = output;
+	}
+	struct Seat *seat;
+	wl_list_for_each(seat, &wm.seats, link) {
+		if (output == seat->focused->output)
+			output->active = seat->focused;
+	}
+}
+
+extern void replace_output(struct Output *output) {
+	struct Output *replacement = NULL, *r;
+	wl_list_for_each(r, &wm.outputs, link)
+		if (r != output)
+			replacement = r;
+
+	struct Space *space;
+	wl_list_for_each(space, &wm.spaces, link)
+		if (space->output == output)
+			space->output = replacement;
+}
+
+extern void place_window(struct Window *window) {
+	struct Seat *seat;
+	wl_list_for_each(seat, &wm.seats, link) {
+		struct Space *space = seat->focused;
+		window->space = space;
+		if (space->maximized == NULL && space->fullscreen == NULL)
+			space->focused = window;
+	}
+}
+
+extern void replace_window(struct Window *window) {
+	struct Space *space;
+	wl_list_for_each(space, &wm.spaces, link) {
+		if (space->maximized == window)
+			space->maximized = NULL;
+		if (space->fullscreen == window)
+			space->fullscreen = NULL;
+		if (space->focused == window) {
+			struct Window *r, *replacement = NULL;
+			wl_list_for_each(r, &wm.windows, link) {
+				if (r->space == space && r != window)
+					replacement = r;
+			}
+			space->focused = replacement;
+		}
+	}
+}
+
+// There is no replace_seat, as nothing points to a Seat
+extern void place_seat(struct Seat *seat) {
+	struct Space *space;
+	wl_list_for_each(space, &wm.spaces, link) {
+		seat->focused = space;
+	}
+}
+
+
+
+// Manage sequence/render sequence functions
+
+// Per-Space focus is technically just internal bookkeeping; this propagates the
+// "real", per-Seat, focus state to the compositor during each manage sequence.
+// Called at the end of the sequence so that other functions can modify focus
 extern void seat_do_focus(struct Seat *seat) {
 	if (seat->focused->focused != NULL)
 		river_seat_v1_focus_window(seat->obj, seat->focused->focused->obj);
@@ -88,6 +170,8 @@ extern void seat_do_focus(struct Seat *seat) {
 		river_seat_v1_clear_focus(seat->obj);
 }
 
+// Perform actions for a Window that have been called for by some event, but
+// must be done during the manage sequence
 extern void window_do_deferred(struct Window *window) {
 	if (window->set_capabilities) {
 		river_window_v1_set_capabilities(window->obj,
@@ -118,9 +202,12 @@ extern void window_do_deferred(struct Window *window) {
 	}
 }
 
-extern void manage_output(struct Output *output) {
+// Perform the main, per-Space, manage sequence logic
+extern void manage_space(struct Space *space) {
+	struct Output *output = active_output(space);
+	if (output == NULL)
+		return;
 	struct Window *window;
-	struct Space *space = output->active;
 	if (space->fullscreen != NULL) {
 		river_window_v1_fullscreen(space->fullscreen->obj, output->obj);
 	} else if (space->maximized != NULL) {
@@ -147,8 +234,11 @@ extern void manage_output(struct Output *output) {
 	}
 }
 
-extern void render_output(struct Output *output) {
-	struct Space *space = output->active;
+// Perform the main, per-Space, render sequence logic
+extern void render_space(struct Space *space) {
+	struct Output *output = active_output(space);
+	if (output == NULL)
+		return;
 	struct Window *window;
 	wl_list_for_each(window, &wm.windows, link) {
 		if (window->space != space) {
