@@ -65,7 +65,7 @@ struct Window {
 	bool fullscreen;        // window_v1.inform_fullscreen
 	bool exit_fullscreen;   // window_v1.inform_not_fullscreen
 
-	// Information for the render sequence (TODO: necessary?)
+	// Information for the render sequence
 	struct Rect layout;
 
 	struct Space *space;    // Non-null

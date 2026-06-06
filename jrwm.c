@@ -217,14 +217,12 @@ static void wm_handle_window(void *data, struct river_window_manager_v1 *obj, st
 
 static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *obj) {
 	struct Window *window;
-	wl_list_for_each(window, &wm.windows, link) {
+	wl_list_for_each(window, &wm.windows, link)
 		window_do_deferred(window);
-	}
 
 	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
+	wl_list_for_each(space, &wm.spaces, link)
 		manage_space(space);
-	}
 
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
@@ -235,10 +233,14 @@ static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *o
 }
 
 static void wm_handle_render_start(void *data, struct river_window_manager_v1 *window_manager_v1) {
+	struct Window *window;
+	wl_list_for_each(window, &wm.windows, link)
+		river_window_v1_hide(window->obj);
+
 	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
+	wl_list_for_each(space, &wm.spaces, link)
 		render_space(space);
-	}
+
 	river_window_manager_v1_render_finish(window_manager_v1);
 }
 

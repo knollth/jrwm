@@ -31,7 +31,6 @@ static uint32_t bordercolor[4] = COLOR(0x333333ff);
 static uint32_t focusedcolor[4] = COLOR(0x77aa99ff);
 
 static int monocle_borderpx = 0;
-
 static int tiled_borderpx = 2;
 static float tiled_splitratio = 0.52;
 
@@ -57,7 +56,7 @@ static bool valid_rect(struct Rect r) {
 //  - These run before the relevant wl_list in wm is updated
 //  - None of these run during a manage or render sequence
 
-// Find a Space for this Output
+// Find a Space for this Output to activate
 extern void place_output(struct Output *output) {
 	struct Space *space;
 	wl_list_for_each(space, &wm.spaces, link) {
@@ -65,11 +64,14 @@ extern void place_output(struct Output *output) {
 		if (space->output == NULL)
 			space->output = output;
 	}
+
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
 		if (output == seat->focused->output)
 			output->active = seat->focused;
 	}
+
+	// FIXME: fallback
 }
 
 // Replace this Output with another for any relevant Spaces
@@ -85,7 +87,7 @@ extern void replace_output(struct Output *output) {
 			space->output = replacement;
 }
 
-// Find a Space for this Window
+// Find a Space for this Window to be in
 extern void place_window(struct Window *window) {
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
@@ -93,28 +95,37 @@ extern void place_window(struct Window *window) {
 		window->space = space;
 		space->focused = window;
 	}
+
+	// TODO: Fallback?  When do we ever have no Seats?
 }
 
 // Replace this Window with another for any relevant Spaces
 extern void replace_window(struct Window *window) {
 	struct Space *space;
 	wl_list_for_each(space, &wm.spaces, link) {
-		if (space->focused == window) {
-			struct Window *r, *replacement = NULL;
-			wl_list_for_each(r, &wm.windows, link) {
-				if (r->space == space && r != window)
-					replacement = r;
-			}
-			space->focused = replacement;
+		if (space->focused != window)
+			continue;
+		struct Window *r, *replacement = NULL;
+		wl_list_for_each(r, &wm.windows, link) {
+			if (r->space == space && r != window)
+				replacement = r;
 		}
+		space->focused = replacement;
 	}
 }
 
-// Find an active Space for this Seat to focus
+// Find a Space for this Seat to focus on
 extern void place_seat(struct Seat *seat) {
 	struct Output *output;
 	wl_list_for_each(output, &wm.outputs, link)
 		seat->focused = output->active;
+
+	// Fall back if we have no active Spaces to work with
+	if (seat->focused == NULL) {
+		struct Space *space;
+		wl_list_for_each(space, &wm.spaces, link)
+			seat->focused = space;
+	}
 }
 
 
@@ -125,6 +136,12 @@ extern void monocle_layout(struct Space *space, struct Rect bounds) {
 	wl_list_for_each(window, &wm.windows, link) {
 		if (window->space != space)
 			continue;
+		if (window->space->focused != NULL &&
+				window->space->focused != window) {
+			// Hack: Intentionally invalidate Rect to prevent rendering
+			window->layout.width = window->layout.height = -1;
+			continue;
+		}
 		window->layout.x = bounds.x + monocle_borderpx;
 		window->layout.y = bounds.y + monocle_borderpx;
 		window->layout.width = bounds.width - monocle_borderpx * 2;
@@ -182,7 +199,6 @@ extern void tiled_layout(struct Space *space, struct Rect bounds) {
 extern void window_do_deferred(struct Window *window) {
 	if (window->set_capabilities) {
 		river_window_v1_set_capabilities(window->obj,
-				RIVER_WINDOW_V1_CAPABILITIES_MAXIMIZE |
 				RIVER_WINDOW_V1_CAPABILITIES_FULLSCREEN);
 		window->set_capabilities = false;
 	}
@@ -220,20 +236,21 @@ extern void seat_do_focus(struct Seat *seat) {
 
 // Perform the main, per-Space, manage sequence logic
 extern void manage_space(struct Space *space) {
-	struct Window *window;
 	struct Output *output = active_on_output(space);
 	if (output == NULL)
 		return;
+
 	space->layout(space, output->windowed);
+
+	struct Window *window;
 	wl_list_for_each(window, &wm.windows, link) {
-		if (window->space == output->active) {
-			river_window_v1_use_ssd(window->obj);
-			river_window_v1_set_tiled(window->obj, 15);
-			if (valid_rect(window->layout))
-				river_window_v1_propose_dimensions(window->obj,
-						window->layout.width,
-						window->layout.height);
-		}
+		if (window->space != output->active || !valid_rect(window->layout))
+			continue;
+		river_window_v1_use_ssd(window->obj);
+		river_window_v1_set_tiled(window->obj, 15);
+		river_window_v1_propose_dimensions(window->obj,
+				window->layout.width,
+				window->layout.height);
 	}
 }
 
@@ -242,32 +259,24 @@ extern void render_space(struct Space *space) {
 	struct Output *output = active_on_output(space);
 	if (output == NULL)
 		return;
+
 	struct Window *window;
 	wl_list_for_each(window, &wm.windows, link) {
-		if (window->space != space) {
-			river_window_v1_hide(window->obj);
+		if (window->space != space || !valid_rect(window->layout))
 			continue;
-		}
-		river_window_v1_show(window->obj);
-		int borderpx = tiled_borderpx;
+
+		int borderpx	= tiled_borderpx;
+		uint32_t *color	= bordercolor;
 		if (space->layout == monocle_layout)
 			borderpx = monocle_borderpx;
 		if (window == window->space->focused) {
 			river_node_v1_place_top(window->node);
-			river_window_v1_set_borders(window->obj, 15, borderpx,
-					focusedcolor[0],
-					focusedcolor[1],
-					focusedcolor[2],
-					focusedcolor[3]);
-		} else {
-			river_window_v1_set_borders(window->obj, 15, borderpx,
-					bordercolor[0],
-					bordercolor[1],
-					bordercolor[2],
-					bordercolor[3]);
+			color = focusedcolor;
 		}
+		river_window_v1_show(window->obj);
+		river_window_v1_set_borders(window->obj, 15, borderpx,
+				color[0], color[1], color[2], color[3]);
 		river_node_v1_set_position(window->node,
-				window->layout.x,
-				window->layout.y);
+				window->layout.x, window->layout.y);
 	}
 }
