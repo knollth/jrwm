@@ -22,26 +22,39 @@ PROTO	= ./protocol
 PROTOS	= $(PROTO)/river-layer-shell-v1.xml $(PROTO)/river-window-management-v1.xml $(PROTO)/river-xkb-bindings-v1.xml
 PROTOC	= $(GEN)/river-layer-shell-v1.c $(GEN)/river-window-management-v1.c $(GEN)/river-xkb-bindings-v1.c
 PROTOH	= $(GEN)/river-layer-shell-v1.h $(GEN)/river-window-management-v1.h $(GEN)/river-xkb-bindings-v1.h
+PROTOO	= $(GEN)/river-layer-shell-v1.o $(GEN)/river-window-management-v1.o $(GEN)/river-xkb-bindings-v1.o
 
 
 #
 # "Manual" targets.
 #
 
-jrwm	: jrwm.c $(PROTOC) $(PROTOH)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o jrwm jrwm.c $(PROTOC)
+HFILES	= jrwm.h
+CFILES	= jrwm.c manage.c bindings.c
+OFILES	= jrwm.o manage.o bindings.o
+
+jrwm	: $(OFILES) $(PROTOO)
+	$(CC) -o jrwm $(LDFLAGS) -o jrwm $(OFILES) $(PROTOO)
 
 clean	:
-	rm -f jrwm jrwm.o $(PROTOC) $(PROTOH)
+	rm -f jrwm $(OFILES) $(PROTOO) $(PROTOC) $(PROTOH)
 
 install	: jrwm
 	$(MKDIR_P) $(INSTALL_DIR)
 	$(INSTALL) -s jrwm $(INSTALL_DIR)
 
+# dependencies
+
+jrwm.o		: jrwm.c jrwm.h $(PROTOH)
+bindings.o	: bindings.c jrwm.h $(PROTOH)
+manage.o	: manage.c jrwm.h $(PROTOH)
+
 
 #
 # Generated file recipes.  Should be made more portable.
 #
+
+$(GEN)/%.o	: $(GEN)/%.c $(GEN)/%.h
 
 $(GEN)/%.c	: $(PROTO)/%.xml
 	wayland-scanner private-code $< $@

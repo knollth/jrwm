@@ -14,7 +14,8 @@ jrwm is intended to be low-dependency, both to build and to run.
 
 ## Configuration
 
-jrwm comprises a single file, `jrwm.c`, which can be edited.
+Bindings are defined in `bindings.c`, and window management policy is defined in
+`manage.c`; that's about as close to configuration as it comes right now.
 
 
 ## Building and installation
