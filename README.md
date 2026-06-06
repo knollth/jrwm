@@ -9,14 +9,25 @@ JrWM is a dynamic tiling WM with a layout inspired by that of dwm.  The
 implementation is based on that of tinyrwm, although JrWM seems to be,
 surprisingly, more fastidiously protocol-rule-following than tinyrwm itself.
 
+JrWM supports:
+-   Multiple "spaces" (workspaces) per output
+-   Layer shell exclusive and non-exclusive surfaces
+-   Window maximization and fullscreen
+-   Per-space layouts, either tiled (`dwm` style) or monocle
+-   Reaping child processes, giving them correct signal handlers, and placing
+    them in their own session
+
 JrWM is intended to be low-dependency, easy to build, easy to read and modify,
 and to have a good degree of correctness.
 
 
 ## Configuration
 
-Bindings are defined in `bindings.c`, and window management policy is defined in
-`layout.c`; that's about as close to configuration as it comes right now.
+Configuration, such as it is, is done by editing the source:
+
+-   `bindings.c` contains key bindings
+-   `layout.c` contains window decoration and layout
+-   `jrwm.c` contains argv of optional command to run on startup
 
 
 ## Building and installation
@@ -47,17 +58,18 @@ The Makefile, like JrWM itself, is intended to be simple and easy to modify.
 
 ## Code style guidelines
 
-These are mostly listed here to remind myself to avoid my own bad habits:
+These reminders are listed here primarily to remind myself to avoid my own bad
+habits:
 
 -   Functions should either be "real" pure functions, or should be
     state-modifying procedures; don't return a value from a function that
     modifies state or makes calls to River/Wayland.
 -   Loops and conditionals should always have braces, unless they contain only
-    other conditionals without braces or a single line (and even then, braces
-    are okay).  An if statement should only have braces on all its clauses or
-    none.
--   In a file, types should go above global variables should go above static
-    functions should go above extern functions (or main).
+    other conditionals without braces or a single statement with no comment (and
+    even then, braces are okay).  An if statement should have braces on all its
+    "then" statements or on none of them.
+-   Files should be ordered: types, variables, static functions, and finally
+    extern functions (or main).
 
 
 ## TODO
@@ -65,17 +77,21 @@ These are mostly listed here to remind myself to avoid my own bad habits:
 JrWM is still in active development.  Desired improvements and additions
 include:
 
--   Better multi-Space support: more Spaces, better Space/Output assignment,
-    dynamic/configurable Spaces
+-   Better multi-space support: more spaces, better space/output assignment,
+    dynamic/configurable spaces
 -   Consider whether a tag-oriented setup can/should be supported as an
-    alternative to a Space-oriented setup (Spaces will still be important
+    alternative to a space-oriented setup (spaces will still be important
     internal data structures, just not necessarily user-affecting)
--   Floating window support, and "dialog" windows as floating windows
--   Follow expectations from other WMs re: focus, window movement, etc.
--   (Optional) focus-follows-pointer and pointer-follows-focus behavior, since
+-   Improve behavior around adding and removing outputs and windows (who gets
+    focus?  Where do spaces get assigned?  How do we handle not enough, or too
+    many, spaces?)
+-   Floating window support, and "dialog"/child windows as floating windows
+-   Optional focus-follows-pointer and pointer-follows-focus behavior, since
     some people like that stuff
+-   Optional extensions for input and output configuration, presuming they
+    enable better "frame perfection" and other behaviors than external tools do
 -   Actual configuration, probably via IPC or API, once the codebase has settled
     down
 
-In addition, the WM is very untested, and probably somewhat broken, with
-multiple outputs.
+JrWM is untested, and so might be buggy, with multiple Outputs or multiple
+Seats.

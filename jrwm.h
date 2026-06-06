@@ -80,6 +80,7 @@ struct Seat {
 	struct river_layer_shell_seat_v1 *ls;
 	struct wl_list xkb_bindings;  // XkbBinding
 
+	bool ls_focused;        // Layer shell surface has focus
 	struct Space *focused;  // Non-null
 };
 
@@ -116,12 +117,13 @@ extern void replace_output(struct Output *);
 extern void replace_window(struct Window *);
 
 // Called during the manage sequence
-extern void seat_do_focus(struct Seat *);
 extern void window_do_deferred(struct Window *);
 extern void manage_space(struct Space *);
+extern void seat_manage_focus(struct Seat *);
 
 // Called during the render sequence
 extern void render_space(struct Space *);
+// extern void seat_render_focus(struct Seat *);
 
 
 // bindings.c

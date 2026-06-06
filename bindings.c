@@ -109,7 +109,7 @@ static void binding_spawn(struct Seat *seat, union Arg arg) {
 	if (fork() == 0) {
 		setsid();
 		signal(SIGCHLD, SIG_DFL);
-		execvp((const char*)arg.v[0], (char *const *)arg.v);
+		execvp((const char *)arg.v[0], (char *const *)arg.v);
 		exit(12);  // Just in case
 	}
 }

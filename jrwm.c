@@ -2,8 +2,8 @@
 
 // This file is meant to have as little "interesting" logic as possible;
 // instead, it should only be responsible for handling the protocol layer,
-// managing memory for the core data structures, and  dispatching to functions
-// in other, less boilerplate-burdened files whenever it can.
+// managing memory for the core data structures, and dispatching to functions in
+// other, less boilerplate-burdened files whenever it can.
 
 // JrWM is free software: you can redistribute it and/or modify it under the
 // terms of the GNU General Public License as published by the Free Software
@@ -23,6 +23,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "jrwm.h"
 
@@ -31,6 +32,10 @@ struct WindowManager wm;
 struct river_window_manager_v1 *window_manager_v1;
 struct river_xkb_bindings_v1 *xkb_bindings_v1;
 struct river_layer_shell_v1 *layer_shell_v1;
+
+// Command run on startup
+// To disable, set to { NULL }; to run more than one, use a shell script
+static char *on_startup[] = { "swaybg", "-c", "222222", NULL };
 
 // Listeners and event handlers for the core types
 
@@ -177,9 +182,18 @@ const struct river_seat_v1_listener river_seat_listener = {
 	.pointer_position = seat_handle_pointer_position,
 };
 
-static void ls_seat_handle_focus_exclusive(void *data, struct river_layer_shell_seat_v1 *ls_seat) {}
-static void ls_seat_handle_focus_non_exclusive(void *data, struct river_layer_shell_seat_v1 *ls_seat) {}
-static void ls_seat_handle_focus_none(void *data, struct river_layer_shell_seat_v1 *ls_seat) {}
+static void ls_seat_handle_focus_exclusive(void *data, struct river_layer_shell_seat_v1 *ls_seat) {
+	struct Seat *seat = data;
+	seat->ls_focused = true;
+}
+static void ls_seat_handle_focus_non_exclusive(void *data, struct river_layer_shell_seat_v1 *ls_seat) {
+	struct Seat *seat = data;
+	seat->ls_focused = true;
+}
+static void ls_seat_handle_focus_none(void *data, struct river_layer_shell_seat_v1 *ls_seat) {
+	struct Seat *seat = data;
+	seat->ls_focused = false;
+}
 
 struct river_layer_shell_seat_v1_listener ls_seat_listener = {
 	.focus_exclusive = ls_seat_handle_focus_exclusive,
@@ -238,7 +252,7 @@ static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *o
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
 		enable_xkb_bindings(seat);
-		seat_do_focus(seat);
+		seat_manage_focus(seat);
 	}
 	river_window_manager_v1_manage_finish(window_manager_v1);
 }
@@ -251,6 +265,10 @@ static void wm_handle_render_start(void *data, struct river_window_manager_v1 *w
 	struct Space *space;
 	wl_list_for_each(space, &wm.spaces, link)
 		render_space(space);
+
+	// struct Seat *seat;
+	// wl_list_for_each(seat, &wm.seats, link)
+	// 	seat_render_focus(seat);
 
 	river_window_manager_v1_render_finish(window_manager_v1);
 }
@@ -344,6 +362,15 @@ int main(void) {
 
 	wm_init();
 	river_window_manager_v1_add_listener(window_manager_v1, &wm_listener, NULL);
+
+	if (on_startup[0] != NULL) {
+		if (fork() == 0) {
+			setsid();
+			signal(SIGCHLD, SIG_DFL);
+			execvp((const char *)on_startup[0], (char *const *)on_startup);
+			exit(12);  // Just in case
+		}
+	}
 
 	while (true) {
 		if (wl_display_dispatch(display) < 0) {

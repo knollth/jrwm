@@ -27,8 +27,9 @@
 			  ((hex >>  8) & 0xFF) * (UINT32_MAX / 255), \
 			  ( hex        & 0xFF) * (UINT32_MAX / 255) }
 
-static uint32_t bordercolor[4] = COLOR(0x333333ff);
-static uint32_t focusedcolor[4] = COLOR(0x77aa99ff);
+static uint32_t border_color[4] = COLOR(0x333333ff);
+// static uint32_t focused_color[4] = COLOR(0x77aa99ff);
+static uint32_t semi_focused_color[4] = COLOR(0x77aa99ff);  // = COLOR(0x555555ff);
 
 static int monocle_borderpx = 0;
 static int tiled_borderpx = 2;
@@ -236,7 +237,7 @@ extern void window_do_deferred(struct Window *window) {
 // propagates the "real", per-Seat, focus state to the compositor during each
 // manage sequence.
 // Called at the end of the sequence so that other functions can modify focus
-extern void seat_do_focus(struct Seat *seat) {
+extern void seat_manage_focus(struct Seat *seat) {
 	if (seat->focused->focused != NULL)
 		river_seat_v1_focus_window(seat->obj, seat->focused->focused->obj);
 	else
@@ -275,12 +276,12 @@ extern void render_space(struct Space *space) {
 			continue;
 
 		int borderpx	= tiled_borderpx;
-		uint32_t *color	= bordercolor;
+		uint32_t *color	= border_color;
 		if (space->layout == monocle_layout)
 			borderpx = monocle_borderpx;
 		if (window == window->space->focused) {
 			river_node_v1_place_top(window->node);
-			color = focusedcolor;
+			color = semi_focused_color;
 		}
 		river_window_v1_show(window->obj);
 		river_window_v1_set_borders(window->obj, 15, borderpx,
