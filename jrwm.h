@@ -59,6 +59,8 @@ struct Window {
 	struct river_window_v1 *obj;
 	struct river_node_v1 *node;
 
+	bool maximized;  // The window has been inform_maximized
+
 	// Deferred tasks for the manage sequence
 	bool set_capabilities;  // window_v1.set_capabilities
 	bool close;             // window_v1.close

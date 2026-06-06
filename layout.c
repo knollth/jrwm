@@ -138,9 +138,13 @@ extern void monocle_layout(struct Space *space, struct Rect bounds) {
 			continue;
 		if (window->space->focused != NULL &&
 				window->space->focused != window) {
-			// Hack: Intentionally invalidate Rect to prevent rendering
+			// HACK: Intentionally invalidate Rect to prevent rendering
 			window->layout.width = window->layout.height = -1;
 			continue;
+		}
+		if (!window->maximized) {
+			river_window_v1_inform_maximized(window->obj);
+			window->maximized = true;
 		}
 		window->layout.x = bounds.x + monocle_borderpx;
 		window->layout.y = bounds.y + monocle_borderpx;
@@ -159,6 +163,10 @@ extern void tiled_layout(struct Space *space, struct Rect bounds) {
 	wl_list_for_each(window, &wm.windows, link) {
 		if (window->space != space)
 			continue;
+		if (window->maximized) {
+			river_window_v1_inform_unmaximized(window->obj);
+			window->maximized = false;
+		}
 		struct Rect wlay;
 		if (count == 1) {
 			// Only window
@@ -199,6 +207,7 @@ extern void tiled_layout(struct Space *space, struct Rect bounds) {
 extern void window_do_deferred(struct Window *window) {
 	if (window->set_capabilities) {
 		river_window_v1_set_capabilities(window->obj,
+				RIVER_WINDOW_V1_CAPABILITIES_MAXIMIZE |
 				RIVER_WINDOW_V1_CAPABILITIES_FULLSCREEN);
 		window->set_capabilities = false;
 	}
