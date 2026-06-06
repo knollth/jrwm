@@ -85,13 +85,18 @@ struct Seat {
 	struct Space *focused;
 };
 
+union Arg {
+	char **v;
+	int32_t i;
+};
+
 struct XkbBinding {
 	struct wl_list link; // Seat.xkb_bindings
 	struct river_xkb_binding_v1 *obj;
 	struct Seat *seat;
 
-	void (*dispatch)(struct Seat *, char **argv);
-	char **argv;
+	void (*dispatch)(struct Seat *, union Arg);
+	union Arg arg;
 	bool enable;  // Enable this binding on the next window_manage
 };
 
@@ -331,7 +336,7 @@ struct river_layer_shell_seat_v1_listener ls_seat_listener = {
 static void xkb_binding_handle_pressed(void *data, struct river_xkb_binding_v1 *obj) {
 	if (debug) fprintf(stderr, "Handling xkb binding\n");
 	struct XkbBinding *binding = data;
-	binding->dispatch(binding->seat, binding->argv);
+	binding->dispatch(binding->seat, binding->arg);
 }
 
 static void xkb_binding_handle_released(void *data, struct river_xkb_binding_v1 *obj) {}
@@ -341,37 +346,37 @@ const struct river_xkb_binding_v1_listener river_xkb_binding_listener = {
 	.released = xkb_binding_handle_released,
 };
 
-static void xkb_binding_create(struct Seat *seat, uint32_t mods, xkb_keysym_t keysym, void (*dispatch)(struct Seat *seat, char **argv), char **argv) {
+static void xkb_binding_create(struct Seat *seat, uint32_t mods, xkb_keysym_t keysym, void (*dispatch)(struct Seat *seat, union Arg arg), union Arg arg) {
 	struct XkbBinding *binding = calloc(1, sizeof(struct XkbBinding));
 	binding->obj = river_xkb_bindings_v1_get_xkb_binding(xkb_bindings_v1, seat->obj, keysym, mods);
 	binding->seat = seat;
 	binding->dispatch = dispatch;
-	binding->argv = argv;
+	binding->arg = arg;
 	binding->enable = true;
 
 	river_xkb_binding_v1_add_listener(binding->obj, &river_xkb_binding_listener, binding);
 	wl_list_insert(&seat->xkb_bindings, &binding->link);
 }
 
-void binding_spawn(struct Seat *seat, char **argv) {
+void binding_spawn(struct Seat *seat, union Arg arg) {
 	if (fork() == 0) {
 		setsid();
 		signal(SIGCHLD, SIG_DFL);
-		execvp((const char*)argv[0], (char *const *)argv);
+		execvp((const char*)arg.v[0], (char *const *)arg.v);
 		exit(12);  // Just in case
 	}
 }
 
-void binding_exit(struct Seat *seat, char **argv) {
+void binding_exit(struct Seat *seat, union Arg arg) {
 	river_window_manager_v1_exit_session(window_manager_v1);
 }
 
-void binding_close(struct Seat *seat, char **argv) {
+void binding_close(struct Seat *seat, union Arg arg) {
 	if (seat->focused->focused != NULL)
 		seat->focused->focused->close = true;
 }
 
-void binding_focus_next(struct Seat *seat, char **argv) {
+void binding_focus_next(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->focused == NULL)
 		return;
@@ -396,7 +401,7 @@ void binding_focus_next(struct Seat *seat, char **argv) {
 	space->focused = fw;
 }
 
-void binding_focus_prev(struct Seat *seat, char **argv) {
+void binding_focus_prev(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->focused == NULL)
 		return;
@@ -421,7 +426,7 @@ void binding_focus_prev(struct Seat *seat, char **argv) {
 	space->focused = fw;
 }
 
-void binding_move_next(struct Seat *seat, char **argv) {
+void binding_move_next(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->focused == NULL || space->focused->parent != NULL)
 		return;
@@ -445,7 +450,7 @@ void binding_move_next(struct Seat *seat, char **argv) {
 	}
 }
 
-void binding_move_prev(struct Seat *seat, char **argv) {
+void binding_move_prev(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->focused == NULL || space->focused->parent != NULL)
 		return;
@@ -469,7 +474,7 @@ void binding_move_prev(struct Seat *seat, char **argv) {
 	}
 }
 
-void binding_toggle_maximize(struct Seat *seat, char **argv) {
+void binding_toggle_maximize(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->focused == NULL)
 		return;
@@ -484,7 +489,7 @@ void binding_toggle_maximize(struct Seat *seat, char **argv) {
 	}
 }
 
-void binding_switch_space(struct Seat *seat, char **argv) {
+void binding_switch_space(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused, *s, *unfocused = NULL;
 	wl_list_for_each(s, &wm.spaces, link) {
 		if (s != space)
@@ -504,23 +509,43 @@ static char *spawn_volume_down[]	= {"mediactl", "pamixer", "--decrease", "5", NU
 static char *spawn_brightness_up[]	= {"mediactl", "brightnessctl", "-e", "set", "5%+", NULL};
 static char *spawn_brightness_down[]	= {"mediactl", "brightnessctl", "-e", "set", "5%-", NULL};
 
-static void init_xkb_bindings(struct Seat *seat) {
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_Return, binding_spawn, spawn_foot);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_space, binding_spawn, spawn_rofi);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_q, binding_close, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_Escape, binding_exit, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_j, binding_focus_next, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_k, binding_focus_prev, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4|RIVER_SEAT_V1_MODIFIERS_SHIFT, XKB_KEY_j, binding_move_next, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4|RIVER_SEAT_V1_MODIFIERS_SHIFT, XKB_KEY_k, binding_move_prev, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_m, binding_toggle_maximize, NULL);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_MOD4, XKB_KEY_s, binding_switch_space, NULL);
+#define super	RIVER_SEAT_V1_MODIFIERS_MOD4
+#define shift	RIVER_SEAT_V1_MODIFIERS_SHIFT
+#define none	RIVER_SEAT_V1_MODIFIERS_NONE
 
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_NONE, XKB_KEY_XF86AudioMute, binding_spawn, spawn_mute);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_NONE, XKB_KEY_XF86AudioRaiseVolume, binding_spawn, spawn_volume_up);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_NONE, XKB_KEY_XF86AudioLowerVolume, binding_spawn, spawn_volume_down);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_NONE, XKB_KEY_XF86MonBrightnessUp, binding_spawn, spawn_brightness_up);
-	xkb_binding_create(seat, RIVER_SEAT_V1_MODIFIERS_NONE, XKB_KEY_XF86MonBrightnessDown, binding_spawn, spawn_brightness_down);
+struct {
+	int32_t mod, key;
+	void (*dispatch)(struct Seat *, union Arg);
+	union Arg arg;
+} binds[] = {
+	{super, XKB_KEY_q, binding_close, {}},
+	{super, XKB_KEY_Escape, binding_exit, {}},
+	{super, XKB_KEY_j, binding_focus_next, {}},
+	{super, XKB_KEY_k, binding_focus_prev, {}},
+	{super|shift, XKB_KEY_j, binding_move_next, {}},
+	{super|shift, XKB_KEY_k, binding_move_prev, {}},
+	{super, XKB_KEY_m, binding_toggle_maximize, {}},
+	{super, XKB_KEY_s, binding_switch_space, {}},
+
+	{super, XKB_KEY_Return, binding_spawn, {.v = spawn_foot}},
+	{super, XKB_KEY_space, binding_spawn, {.v = spawn_rofi}},
+	{none, XKB_KEY_XF86AudioMute, binding_spawn, {.v = spawn_mute}},
+	{none, XKB_KEY_XF86AudioRaiseVolume, binding_spawn, {.v = spawn_volume_up}},
+	{none, XKB_KEY_XF86AudioLowerVolume, binding_spawn, {.v = spawn_volume_down}},
+	{none, XKB_KEY_XF86MonBrightnessUp, binding_spawn, {.v = spawn_brightness_up}},
+	{none, XKB_KEY_XF86MonBrightnessDown, binding_spawn, {.v = spawn_brightness_down}},
+	{0, 0, NULL, {}}
+};
+
+#undef super
+#undef shift
+#undef none
+
+static void init_xkb_bindings(struct Seat *seat) {
+	int i;
+	for (i = 0; binds[i].dispatch != NULL; i++) {
+		xkb_binding_create(seat, binds[i].mod, binds[i].key, binds[i].dispatch, binds[i].arg);
+	}
 }
 
 
