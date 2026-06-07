@@ -2,29 +2,26 @@
 
 _(Alternatively, jpco's river window manager)_
 
-JrWM is a tiling window manager written for [the river Wayland
+JrWM is a dynamic tiling window manager written for [the river Wayland
 compositor](https://isaacfreund.com/software/river/).
+It is designed to be small, low-dependency, easy to build, read and modify, and
+to have a good degree of correctness.
 
-JrWM is a dynamic tiling WM with a layout inspired by that of dwm.  The
-implementation is based on that of tinyrwm, although JrWM seems to be,
-surprisingly, more fastidiously protocol-rule-following than tinyrwm itself.
+Windows in JrWM are organized into spaces, which are collections of windows
+associated with an output and a layout.  Multiple spaces may be associated with
+an output simultaneously, but only one space is visible on an output at any one
+time.  Supported layouts are a tiled layout like that of dwm and a monocle
+layout.
 
-JrWM supports:
--   Multiple "spaces" (workspaces) per output
--   Layer shell exclusive and non-exclusive surfaces
--   Window maximization and fullscreen
--   Per-space layouts, either tiled (`dwm` style) or monocle
--   Reaping child processes, giving them correct signal handlers, and placing
-    them in their own session
-
-JrWM is intended to be low-dependency, easy to build, easy to read and modify,
-and to have a good degree of correctness.
+JrWM supports very little in the way of visuals.  Window borders are drawn to
+indicate focus state, but for anything else, additional programs such as waybar
+must be used.  For the sake of these programs, JrWM supports the
+river-layer-shell-v1 protocol.
 
 ![Screenshot of JrWM](/doc/jrwm.png)
 
 _A screenshot of JrWM featuring waybar, foot, vim,
-[notcat](https://github.com/jpco/notcat),
-[es](https://github.com/wryun/es-shell) and zathura._
+[es](https://github.com/wryun/es-shell), the [notcat](https://github.com/jpco/notcat) notification server, and zathura._
 
 
 ## Configuration
@@ -33,7 +30,7 @@ Configuration, such as it is, is done by editing the source:
 
 -   `bindings.c` contains key bindings
 -   `layout.c` contains window decoration and layout
--   `jrwm.c` contains argv of optional command to run on startup
+-   `jrwm.c` interacts with Wayland
 
 
 ## Building and installation
@@ -57,7 +54,8 @@ Installation is then, as root,
 make install
 ```
 
-JrWM will be installed into the /usr/local/bin directory.
+JrWM will be installed into the /usr/local/bin directory, and its man page will
+be installed into /usr/local/man.
 
 The Makefile, like JrWM itself, is intended to be simple and easy to modify.
 
@@ -86,11 +84,10 @@ include:
 
 -   Better multi-space support: more spaces, better space/output assignment,
     dynamic/configurable spaces
--   Improve behavior around adding and removing outputs and windows (who gets
-    focus?  Where do spaces get assigned?  How do we handle not enough, or too
-    many, spaces?)
+-   Improve behavior around adding and removing outputs/windows/seats/spaces
+    (who gets focus?  Where do spaces get assigned?  How do we handle not
+    enough, or too many, spaces?)
 -   Floating window support, and "dialog"/child windows as floating windows
--   Documentation, probably via man page
 -   JrWM is untested, and so probably buggy, with multiple outputs or seats; we
     should fix that
 
@@ -101,7 +98,7 @@ Some possible further additions:
     internal data structures, just not necessarily user-affecting)
 -   Optional focus-follows-pointer and pointer-follows-focus behavior, since
     some people like that stuff
--   Optional extensions for input and output management, presuming they enable
-    better "frame perfection" and other behaviors than external tools do
+-   Optional extensions for input and output management, presuming they can do
+    it better than external tools (e.g., frame-perfect output scaling)
 -   Actual configuration, probably via IPC or API, once the codebase has settled
     down
