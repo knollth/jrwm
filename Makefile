@@ -1,21 +1,23 @@
 # Basic make variables.
 
 CC	= gcc
-INSTALL	= /usr/bin/install -c
+INSTALL	= /usr/bin/install -c -s
 MKDIR_P	= /usr/bin/mkdir -p
 
-INSTALL_DIR	= /usr/local/bin
-PROTO_DIR	= ./protocol
+PREFIX	= /usr/local
+BINDIR	= $(PREFIX)/bin
+MANDIR	= $(PREFIX)/man
 
-CFLAGS	= -g -O2 -Wall -I$(PROTO_DIR) -lwayland-client -lxkbcommon
+CFLAGS	= -g -O2 -Wall -I$(PROTODIR) -lwayland-client -lxkbcommon
 
 CFILES	= jrwm.c layout.c bindings.c $(PROTOC)
 HFILES	= jrwm.h $(PROTOH)
+PROTODIR = ./protocol
 
 
 # Generated file variables.
 
-PROTOS	= $(PROTO_DIR)/river-layer-shell-v1.xml $(PROTO_DIR)/river-window-management-v1.xml $(PROTO_DIR)/river-xkb-bindings-v1.xml
+PROTOS	= $(PROTODIR)/river-layer-shell-v1.xml $(PROTODIR)/river-window-management-v1.xml $(PROTODIR)/river-xkb-bindings-v1.xml
 PROTOC	= $(PROTOS:.xml=.c)
 PROTOH	= $(PROTOS:.xml=.h)
 
@@ -29,8 +31,11 @@ clean	:
 	rm -f jrwm $(PROTOC) $(PROTOH)
 
 install	: jrwm
-	$(MKDIR_P) $(INSTALL_DIR)
-	$(INSTALL) -s jrwm $(INSTALL_DIR)
+	$(MKDIR_P) $(BINDIR)
+	$(INSTALL) jrwm $(BINDIR)
+	$(MKDIR_P) $(MANDIR)/man1
+	cp doc/jrwm.1 $(MANDIR)/man1
+	chmod 644 $(MANDIR)/man1/jrwm.1
 
 .PHONY	: clean
 

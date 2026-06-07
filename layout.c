@@ -168,34 +168,24 @@ extern void tiled_layout(struct Space *space, struct Rect bounds) {
 			river_window_v1_inform_unmaximized(window->obj);
 			window->maximized = false;
 		}
-		struct Rect wlay;
-		if (count == 1) {
-			// Only window
-			wlay.x = bounds.x + tiled_borderpx;
-			wlay.y = bounds.y + tiled_borderpx;
-			wlay.width = bounds.width - tiled_borderpx * 2;
-			wlay.height = bounds.height - tiled_borderpx * 2;
-		} else if (w == 0) {
+		if (count == 1 || w == 0) {
 			// Left side "main" window
-			wlay.x = bounds.x + tiled_borderpx;
-			wlay.y = bounds.y + tiled_borderpx;
-			wlay.width = bounds.width * tiled_splitratio - tiled_borderpx * 2;
-			wlay.height = bounds.height - tiled_borderpx * 2;
+			float split = (count == 1 ? 1.0 : tiled_splitratio);
+			window->layout.x = bounds.x + tiled_borderpx;
+			window->layout.y = bounds.y + tiled_borderpx;
+			window->layout.width = bounds.width * split - tiled_borderpx * 2;
+			window->layout.height = bounds.height - tiled_borderpx * 2;
 
-			rightwidth -= wlay.width + tiled_borderpx;
+			rightwidth -= window->layout.width + tiled_borderpx;
 		} else {
 			// Right side "stacked" windows
-			wlay.x = bounds.x + bounds.width - rightwidth + tiled_borderpx;
-			wlay.y = bounds.y + bounds.height - rightheight + tiled_borderpx;
-			wlay.width = rightwidth - tiled_borderpx * 2;
-			wlay.height = rightheight / (count - w) - tiled_borderpx * 2;
+			window->layout.x = bounds.x + bounds.width - rightwidth + tiled_borderpx;
+			window->layout.y = bounds.y + bounds.height - rightheight + tiled_borderpx;
+			window->layout.width = rightwidth - tiled_borderpx * 2;
+			window->layout.height = rightheight / (count - w) - tiled_borderpx * 2;
 
-			rightheight -= wlay.height + tiled_borderpx;
+			rightheight -= window->layout.height + tiled_borderpx;
 		}
-		window->layout.x = wlay.x;
-		window->layout.y = wlay.y;
-		window->layout.width = wlay.width;
-		window->layout.height = wlay.height;
 		w++;
 	}
 }

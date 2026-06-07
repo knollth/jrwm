@@ -67,7 +67,7 @@ The Makefile, like JrWM itself, is intended to be simple and easy to modify.
 These reminders are listed here primarily to remind myself to avoid my own bad
 habits:
 
--   Functions should either be "real" pure functions, or should be
+-   Functions should either be "real", pure functions, or should be
     state-modifying procedures; don't return a value from a function that
     modifies state or makes calls to River/Wayland.
 -   Loops and conditionals should always have braces, unless they contain only
@@ -75,7 +75,8 @@ habits:
     even then, braces are okay).  An if statement should have braces on all its
     "then" statements or on none of them.
 -   Files should be ordered: types, variables, static functions, and finally
-    extern functions (or main).
+    extern functions (or main).  If this order becomes too obnoxious, that's
+    evidence the file should be split up.
 
 
 ## TODO
