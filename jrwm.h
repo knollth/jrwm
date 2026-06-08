@@ -117,13 +117,13 @@ extern void replace_output(struct Output *);
 extern void replace_window(struct Window *);
 
 // Called during the manage sequence
-extern void window_do_deferred(struct Window *);
+extern void manage_window_deferred(struct Window *);
 extern void manage_space(struct Space *);
-extern void seat_manage_focus(struct Seat *);
+extern void manage_seat_focus(struct Seat *);
 
 // Called during the render sequence
 extern void render_space(struct Space *);
-extern void seat_render_focus(struct Seat *);
+extern void render_seat_focus(struct Seat *);
 
 
 // bindings.c

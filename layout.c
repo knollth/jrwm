@@ -219,7 +219,7 @@ extern void tiled_layout(struct Space *space, struct Rect bounds) {
 
 // Perform actions for a Window that have been called for by some event, but
 // must be done during the manage sequence
-extern void window_do_deferred(struct Window *window) {
+extern void manage_window_deferred(struct Window *window) {
 	if (window->set_capabilities) {
 		river_window_v1_set_capabilities(window->obj,
 				RIVER_WINDOW_V1_CAPABILITIES_MAXIMIZE |
@@ -251,7 +251,7 @@ extern void window_do_deferred(struct Window *window) {
 // propagates the "real", per-Seat, focus state to the compositor during each
 // manage sequence.
 // Called at the end of the sequence so that other functions can modify focus
-extern void seat_manage_focus(struct Seat *seat) {
+extern void manage_seat_focus(struct Seat *seat) {
 	if (seat->focused->focused != NULL)
 		river_seat_v1_focus_window(seat->obj, seat->focused->focused->obj);
 	else
@@ -301,7 +301,7 @@ extern void render_space(struct Space *space) {
 	}
 }
 
-extern void seat_render_focus(struct Seat *seat) {
+extern void render_seat_focus(struct Seat *seat) {
 	struct Window *window = seat->focused->focused;
 	if (window == NULL || seat->ls_focused)
 		return;

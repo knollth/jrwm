@@ -240,7 +240,7 @@ static void wm_handle_window(void *data, struct river_window_manager_v1 *obj, st
 static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *obj) {
 	struct Window *window;
 	wl_list_for_each(window, &wm.windows, link)
-		window_do_deferred(window);
+		manage_window_deferred(window);
 
 	struct Space *space;
 	wl_list_for_each(space, &wm.spaces, link)
@@ -249,7 +249,7 @@ static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *o
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
 		enable_xkb_bindings(seat);
-		seat_manage_focus(seat);
+		manage_seat_focus(seat);
 	}
 	river_window_manager_v1_manage_finish(window_manager_v1);
 }
@@ -265,7 +265,7 @@ static void wm_handle_render_start(void *data, struct river_window_manager_v1 *w
 
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link)
-		seat_render_focus(seat);
+		render_seat_focus(seat);
 
 	river_window_manager_v1_render_finish(window_manager_v1);
 }
