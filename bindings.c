@@ -263,6 +263,9 @@ static void binding_activate_space(struct Seat *seat, union Arg arg) {
 		if ((++i) == arg.i)
 			space = s;
 
+	if (space == NULL)
+		return;
+
 	// If the Space is "idle", yank it here
 	if (is_space_idle(space))
 		space->output = seat->focused->output;
@@ -282,6 +285,9 @@ static void binding_move_to_space(struct Seat *seat, union Arg arg) {
 	wl_list_for_each(s, &wm.spaces, link)
 		if ((++i) == arg.i)
 			space = s;
+
+	if (space == NULL)
+		return;
 
 	replace_window(window);  // Sensible?
 	window->space = space;
