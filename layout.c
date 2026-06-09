@@ -139,8 +139,10 @@ extern void replace_window(struct Window *window) {
 		// Find a random other Window to focus in the Space
 		// (or NULL, if no other Window exists)
 		wl_list_for_each(r, &wm.windows, link) {
-			if (r->space == space && r != window)
+			if (r->space == space && r != window) {
 				replacement = r;
+				break;
+			}
 		}
 		space->focused = replacement;
 	}

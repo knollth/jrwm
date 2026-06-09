@@ -33,11 +33,14 @@ struct river_window_manager_v1 *window_manager_v1;
 struct river_xkb_bindings_v1 *xkb_bindings_v1;
 struct river_layer_shell_v1 *layer_shell_v1;
 
+// How many Spaces are allocated on startup.  At least one will be created
+// irrespective of this value.  If Outputs need more Spaces than this, they will
+// be created "on demand".
+static int static_spaces = 9;
 
 // Utility functions for the rest of the binary
 
 // An "idle" space has no windows and is not active on any Outputs
-// It is eligible to be yanked around between Outputs freely
 extern bool is_space_idle(struct Space *space) {
 	struct Window *w;
 	wl_list_for_each(w, &wm.windows, link)
@@ -325,9 +328,9 @@ static void wm_init(void) {
 	wl_list_init(&wm.seats);
 	wl_list_init(&wm.spaces);
 
-	// Create static spaces
-	int i;
-	for (i = 1; i <= 9; i++) {
+	// Pre-allocate static spaces
+	int i, sp = (static_spaces < 1 ? 1 : static_spaces);
+	for (i = 0; i < sp; i++) {
 		struct Space *space = create_space();
 		wl_list_insert(&wm.spaces, &space->link);
 	}

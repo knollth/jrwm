@@ -88,8 +88,11 @@ include:
 
 -   Floating window support, and "dialog"/child windows as floating windows
 -   Better ability to add/remove spaces
--   Multi-seat support
--   Fix up bad `wl_list` handling
+-   Better support for moving around spaces and windows on multiple outputs
+-   Multi-seat support (in particular, something with `xdg_activation_v1` to
+    properly associate a window with the seat that created it)
+-   Fix up weak `wl_list` handling
+-   Merge current Spaces with river-workspace-v1 when that becomes available
 
 Some possible further additions:
 

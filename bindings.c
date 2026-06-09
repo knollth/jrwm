@@ -52,14 +52,17 @@ struct XkbBinding {
 
 // Binding declarations and configuration
 
+// Bindings to manage single objects
 static void binding_spawn(struct Seat *seat, union Arg arg);
 static void binding_exit(struct Seat *seat, union Arg arg);
 static void binding_close(struct Seat *seat, union Arg arg);
+static void binding_toggle_monocle(struct Seat *seat, union Arg arg);
+
+// Bindings to move focus and objects through the WM
 static void binding_focus_next(struct Seat *seat, union Arg arg);
 static void binding_focus_prev(struct Seat *seat, union Arg arg);
 static void binding_move_next(struct Seat *seat, union Arg arg);
 static void binding_move_prev(struct Seat *seat, union Arg arg);
-static void binding_toggle_monocle(struct Seat *seat, union Arg arg);
 static void binding_activate_space(struct Seat *seat, union Arg arg);
 static void binding_move_to_space(struct Seat *seat, union Arg arg);
 
@@ -141,6 +144,17 @@ static void binding_exit(struct Seat *seat, union Arg arg) {
 static void binding_close(struct Seat *seat, union Arg arg) {
 	if (seat->focused->focused != NULL)
 		seat->focused->focused->close = true;
+}
+
+// Toggle the currently focused Space's layout between tiled and monocle
+static void binding_toggle_monocle(struct Seat *seat, union Arg arg) {
+	struct Space *space = seat->focused;
+	if (space->focused == NULL)
+		return;
+	if (space->layout == tiled_layout)
+		space->layout = monocle_layout;
+	else
+		space->layout = tiled_layout;
 }
 
 // Focus the next visible window
@@ -243,17 +257,6 @@ static void binding_move_prev(struct Seat *seat, union Arg arg) {
 		wl_list_insert(wm.windows.prev, &curr->link);
 }
 
-// Toggle the currently focused Space's layout between tiled and monocle
-static void binding_toggle_monocle(struct Seat *seat, union Arg arg) {
-	struct Space *space = seat->focused;
-	if (space->focused == NULL)
-		return;
-	if (space->layout == tiled_layout)
-		space->layout = monocle_layout;
-	else
-		space->layout = tiled_layout;
-}
-
 // Activate and focus the nth Space
 static void binding_activate_space(struct Seat *seat, union Arg arg) {
 	int i = 0;
@@ -267,7 +270,7 @@ static void binding_activate_space(struct Seat *seat, union Arg arg) {
 		return;
 
 	// If the Space is "idle", yank it here
-	if (is_space_idle(space))
+	if (space->output == NULL || is_space_idle(space))
 		space->output = seat->focused->output;
 
 	space->output->active = space;
