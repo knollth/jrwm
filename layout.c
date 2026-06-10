@@ -87,7 +87,7 @@ extern void place_output(struct Output *output) {
 	wl_list_insert(&wm.spaces, &space->link);
 }
 
-// Replace this Output with another for any relevant Spaces
+// Replace this Output with any other where necessary
 extern void replace_output(struct Output *output) {
 	struct Output *replacement = NULL, *r;
 	struct Space *space;
@@ -105,56 +105,39 @@ extern void replace_output(struct Output *output) {
 
 // Find a Space for this Window to be in
 extern void place_window(struct Window *window) {
-	struct Seat *seat;
-	struct Space *space;
-
-	// Use a random Seat's focused Space
-	// TODO: How to pick the right Seat here?
-	wl_list_for_each(seat, &wm.seats, link) {
-		space = seat->focused;
-		window->space = space;
-		space->focused = window;
+	// If there is one, pick the first Seat's focused Space
+	// TODO: Pick the correct Seat, once we have a way to know what that is
+	if (!wl_list_empty(&wm.seats)) {
+		struct Seat *seat = wl_container_of(wm.seats.next, seat, link);
+		window->space = seat->focused;
+		seat->focused->focused = window;
 	}
 
-	// Fallback: pick the first Space
+	// Fallback: just pick the first Space
 	if (window->space == NULL) {
-		wl_list_for_each(space, &wm.spaces, link) {
-			window->space = space;
+		window->space = wl_container_of(wm.spaces.next, window->space, link);
+		window->space->focused = window;
+	}
+}
+
+// Replace this Window with any other where necessary
+extern void replace_window(struct Window *window) {
+	if (window->space->focused != window)
+		return;
+	struct Window *r, *replacement = NULL;
+	// Focus the first Window in the Space (or NULL, if no other Window)
+	wl_list_for_each(r, &wm.windows, link) {
+		if (r->space == window->space && r != window) {
+			replacement = r;
 			break;
 		}
 	}
-
-	// If the Space has no focused Window, focus this one
-	if (window->space->focused == NULL)
-		window->space->focused = window;
-}
-
-// Replace this Window with another for any relevant Spaces
-extern void replace_window(struct Window *window) {
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
-		if (space->focused != window)
-			continue;
-		struct Window *r, *replacement = NULL;
-		// Find a random other Window to focus in the Space
-		// (or NULL, if no other Window exists)
-		wl_list_for_each(r, &wm.windows, link) {
-			if (r->space == space && r != window) {
-				replacement = r;
-				break;
-			}
-		}
-		space->focused = replacement;
-	}
+	window->space->focused = replacement;
 }
 
 // Find a Space for this Seat to focus on
 extern void place_seat(struct Seat *seat) {
-	struct Space *space;
-	wl_list_for_each(space, &wm.spaces, link) {
-		seat->focused = space;
-		break;
-	}
+	seat->focused = wl_container_of(wm.spaces.next, seat->focused, link);
 }
 
 
