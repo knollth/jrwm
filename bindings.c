@@ -188,51 +188,43 @@ static void binding_focus_prev(struct Seat *seat, union Arg arg) {
 // Move this window to where the next visible one is
 // TODO: Multi-output
 static void binding_move_next(struct Seat *seat, union Arg arg) {
-	struct Space *space = seat->focused;
-	if (space->focused == NULL)
+	struct Window *w, *target = NULL, *curr = seat->focused->focused;
+	if (curr == NULL)
 		return;
-	bool next = false;
-	struct Window *curr = space->focused, *target = NULL, *w = NULL;
-	wl_list_for_each(w, &wm.windows, link) {
-		if (w->space != space)
-			continue;
-		if (next) {
+
+	bool first = (&curr->link == wm.windows.next);
+	wl_list_for_each(w, &curr->link, link) {
+		if (w->space == curr->space) {
 			target = w;
 			break;
 		}
-		if (w == curr)
-			next = true;
 	}
 	wl_list_remove(&curr->link);
-	if (target != NULL)
-		wl_list_insert(&target->link, &curr->link);
-	else
+	if (target == NULL || (!first && &target->link == wm.windows.next))
 		wl_list_insert(&wm.windows, &curr->link);
+	else
+		wl_list_insert(&target->link, &curr->link);
 }
 
 // Move this window to where the previous visible one is
 // TODO: Multi-output
 static void binding_move_prev(struct Seat *seat, union Arg arg) {
-	struct Space *space = seat->focused;
-	if (space->focused == NULL)
+	struct Window *w, *target = NULL, *curr = seat->focused->focused;
+	if (curr == NULL)
 		return;
-	bool next = false;
-	struct Window *curr = space->focused, *target = NULL, *w = NULL;
-	wl_list_for_each_reverse(w, &wm.windows, link) {
-		if (w->space != space)
-			continue;
-		if (next) {
+
+	bool last = (&curr->link == wm.windows.prev);
+	wl_list_for_each_reverse(w, &curr->link, link) {
+		if (w->space == curr->space) {
 			target = w;
 			break;
 		}
-		if (w == curr)
-			next = true;
 	}
 	wl_list_remove(&curr->link);
-	if (target != NULL)
-		wl_list_insert(target->link.prev, &curr->link);
-	else
+	if (target == NULL || (!last && &target->link == wm.windows.prev))
 		wl_list_insert(wm.windows.prev, &curr->link);
+	else
+		wl_list_insert(target->link.prev, &curr->link);
 }
 
 // Activate and focus the nth Space
