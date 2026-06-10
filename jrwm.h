@@ -130,7 +130,9 @@ extern void render_seat_focus(struct Seat *);
 // bindings.c
 
 extern void init_xkb_bindings(struct Seat *);
-extern void enable_xkb_bindings(struct Seat *);
+extern void manage_xkb_bindings(struct Seat *);
 extern void remove_xkb_bindings(struct Seat *);
+extern void lock_xkb_bindings(struct Seat *);
+extern void unlock_xkb_bindings(struct Seat *);
 
 #endif

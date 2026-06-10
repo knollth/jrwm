@@ -39,6 +39,12 @@ struct Binddef {
 	union Arg arg;
 };
 
+enum BindingManageAction {
+	BINDING_MANAGE_NONE,
+	BINDING_MANAGE_ENABLE,
+	BINDING_MANAGE_DISABLE
+};
+
 struct XkbBinding {
 	struct wl_list link; // Seat.xkb_bindings
 	struct river_xkb_binding_v1 *obj;
@@ -46,7 +52,7 @@ struct XkbBinding {
 
 	void (*dispatch)(struct Seat *, union Arg);
 	union Arg arg;
-	bool enable;  // Enable this binding on the next window_manage
+	enum BindingManageAction manage;  // What to do on next window_manage
 };
 
 
@@ -278,7 +284,7 @@ static void xkb_binding_create(struct Seat *seat, uint32_t mods, xkb_keysym_t ke
 	binding->seat = seat;
 	binding->dispatch = dispatch;
 	binding->arg = arg;
-	binding->enable = true;
+	binding->manage = BINDING_MANAGE_ENABLE;
 
 	river_xkb_binding_v1_add_listener(binding->obj, &river_xkb_binding_listener, binding);
 	wl_list_insert(&seat->xkb_bindings, &binding->link);
@@ -291,13 +297,19 @@ extern void init_xkb_bindings(struct Seat *seat) {
 				binds[i].dispatch, binds[i].arg);
 }
 
-extern void enable_xkb_bindings(struct Seat *seat) {
+extern void manage_xkb_bindings(struct Seat *seat) {
 	struct XkbBinding *binding;
 	wl_list_for_each(binding, &seat->xkb_bindings, link) {
-		if (binding->enable) {
+		switch (binding->manage) {
+		case BINDING_MANAGE_ENABLE:
 			river_xkb_binding_v1_enable(binding->obj);
-			binding->enable = false;
+			break;
+		case BINDING_MANAGE_DISABLE:
+			river_xkb_binding_v1_disable(binding->obj);
+			break;
+		case BINDING_MANAGE_NONE:
 		}
+		binding->manage = BINDING_MANAGE_NONE;
 	}
 }
 
@@ -308,4 +320,16 @@ extern void remove_xkb_bindings(struct Seat *seat) {
 		wl_list_remove(&binding->link);
 		free(binding);
 	}
+}
+
+extern void lock_xkb_bindings(struct Seat *seat) {
+	struct XkbBinding *binding;
+	wl_list_for_each(binding, &seat->xkb_bindings, link)
+		binding->manage = BINDING_MANAGE_DISABLE;
+}
+
+extern void unlock_xkb_bindings(struct Seat *seat) {
+	struct XkbBinding *binding;
+	wl_list_for_each(binding, &seat->xkb_bindings, link)
+		binding->manage = BINDING_MANAGE_ENABLE;
 }

@@ -271,7 +271,7 @@ static void wm_handle_manage_start(void *data, struct river_window_manager_v1 *o
 
 	struct Seat *seat;
 	wl_list_for_each(seat, &wm.seats, link) {
-		enable_xkb_bindings(seat);
+		manage_xkb_bindings(seat);
 		manage_seat_focus(seat);
 	}
 	river_window_manager_v1_manage_finish(window_manager_v1);
@@ -304,8 +304,17 @@ static void wm_handle_unavailable(void *data, struct river_window_manager_v1 *ob
 }
 
 // Ignored WM events
-static void wm_handle_session_locked(void *data, struct river_window_manager_v1 *obj) {}
-static void wm_handle_session_unlocked(void *data, struct river_window_manager_v1 *obj) {}
+static void wm_handle_session_locked(void *data, struct river_window_manager_v1 *obj) {
+	struct Seat *seat;
+	wl_list_for_each(seat, &wm.seats, link)
+		lock_xkb_bindings(seat);
+}
+
+static void wm_handle_session_unlocked(void *data, struct river_window_manager_v1 *obj) {
+	struct Seat *seat;
+	wl_list_for_each(seat, &wm.seats, link)
+		unlock_xkb_bindings(seat);
+}
 
 static const struct river_window_manager_v1_listener wm_listener = {
 	.unavailable = wm_handle_unavailable,
