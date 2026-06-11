@@ -34,6 +34,8 @@ static int monocle_borderpx = 0;
 static int tiled_borderpx = 2;
 static float tiled_splitratio = 0.52;
 
+static bool pointer_follows_focus = true;
+
 
 // Private functions for window management and rendering
 
@@ -245,6 +247,17 @@ extern void manage_seat_focus(struct Seat *seat) {
 		river_seat_v1_focus_window(seat->obj, seat->focused->focused->obj);
 	else
 		river_seat_v1_clear_focus(seat->obj);
+
+	// Warp the pointer to the focused window
+	if (pointer_follows_focus && seat->warp && !seat->ls_focused) {
+		struct Window *window = seat->focused->focused;
+		if (window != NULL) {
+			int32_t x = window->layout.x + window->layout.width/2;
+			int32_t y = window->layout.y + window->layout.height/2;
+			river_seat_v1_pointer_warp(seat->obj, x, y);
+		}
+		seat->warp = false;
+	}
 }
 
 // Perform the main, per-Space, manage sequence logic

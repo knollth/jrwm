@@ -200,14 +200,18 @@ static void binding_toggle_monocle(struct Seat *seat, union Arg arg) {
 
 static void binding_focus_next(struct Seat *seat, union Arg arg) {
 	struct Window *window = next_window(seat->focused->focused, NULL);
-	if (window != NULL)
-		seat->focused->focused = window;
+	if (window == NULL)
+		return;
+	seat->focused->focused = window;
+	seat->warp = true;
 }
 
 static void binding_focus_prev(struct Seat *seat, union Arg arg) {
 	struct Window *window = prev_window(seat->focused->focused, NULL);
-	if (window != NULL)
-		seat->focused->focused = window;
+	if (window == NULL)
+		return;
+	seat->focused->focused = window;
+	seat->warp = true;
 }
 
 static void binding_move_next(struct Seat *seat, union Arg arg) {
@@ -222,6 +226,7 @@ static void binding_move_next(struct Seat *seat, union Arg arg) {
 		wl_list_insert(&wm.windows, &window->link);
 	else
 		wl_list_insert(&target->link, &window->link);
+	seat->warp = true;
 }
 
 static void binding_move_prev(struct Seat *seat, union Arg arg) {
@@ -236,6 +241,7 @@ static void binding_move_prev(struct Seat *seat, union Arg arg) {
 		wl_list_insert(wm.windows.prev, &window->link);
 	else
 		wl_list_insert(target->link.prev, &window->link);
+	seat->warp = true;
 }
 
 // Activate and focus the nth Space

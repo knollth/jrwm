@@ -48,7 +48,7 @@ struct Output {
 	struct river_output_v1 *obj;
 	struct river_layer_shell_output_v1 *ls;
 
-	struct Rect windowed;
+	struct Rect real, windowed;
 
 	struct Space *active;   // Non-null
 };
@@ -79,6 +79,8 @@ struct Seat {
 	struct river_seat_v1 *obj;
 	struct river_layer_shell_seat_v1 *ls;
 	struct wl_list xkb_bindings;  // XkbBinding
+
+	bool warp;              // Warp pointer to focused window
 
 	bool ls_focused;        // Layer shell surface has focus
 	struct Space *focused;  // Non-null

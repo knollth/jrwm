@@ -38,6 +38,9 @@ struct river_layer_shell_v1 *layer_shell_v1;
 // be created "on demand".
 static int static_spaces = 9;
 
+static bool focus_follows_pointer = true;
+
+
 // Utility functions for the rest of the binary
 
 // An "idle" space has no windows and is not active on any Outputs
@@ -182,9 +185,17 @@ static void seat_handle_window_interaction(void *data, struct river_seat_v1 *obj
 	window->space->focused = window;
 }
 
+static void seat_handle_pointer_enter(void *data, struct river_seat_v1 *obj, struct river_window_v1 *river_window) {
+	if (!focus_follows_pointer)
+		return;
+	struct Seat *seat = data;
+	struct Window *window = river_window_v1_get_user_data(river_window);
+	seat->focused = window->space;
+	window->space->focused = window;
+}
+
 static void seat_handle_op_delta(void *data, struct river_seat_v1 *obj, int32_t dx, int32_t dy) {}
 static void seat_handle_op_release(void *data, struct river_seat_v1 *obj) {}
-static void seat_handle_pointer_enter(void *data, struct river_seat_v1 *obj, struct river_window_v1 *river_window) {}
 static void seat_handle_pointer_leave(void *data, struct river_seat_v1 *obj) {}
 static void seat_handle_pointer_position(void *data, struct river_seat_v1 *obj, int32_t x, int32_t y) {}
 static void seat_handle_shell_surface_interaction(void *data, struct river_seat_v1 *obj, struct river_shell_surface_v1 *river_shell_surface) {}

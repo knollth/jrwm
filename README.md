@@ -99,8 +99,6 @@ Some possible further additions:
 -   Flexibility for layouts - e.g., binary space partitioning, tags, scrolling
 -   Flexibility in other behaviors, like focus changes on object creation and
     deletion, dynamic spaces, etc.
--   Optional focus-follows-pointer and pointer-follows-focus behavior, since
-    some people like that stuff
 -   Optional extensions for built-in input and output management, presuming they
     can do it better than external tools (e.g., frame-perfect output scaling)
 -   Actual configuration, probably via IPC or API, once the codebase has settled
