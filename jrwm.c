@@ -72,8 +72,18 @@ static void output_handle_removed(void *data, struct river_output_v1 *obj) {
 	free(output);
 }
 
-static void output_handle_dimensions(void *data, struct river_output_v1 *obj, int32_t width, int32_t height) {}
-static void output_handle_position(void *data, struct river_output_v1 *obj, int32_t x, int32_t y) {}
+static void output_handle_position(void *data, struct river_output_v1 *obj, int32_t x, int32_t y) {
+	struct Output *output = data;
+	output->real.x = x;
+	output->real.y = y;
+}
+
+static void output_handle_dimensions(void *data, struct river_output_v1 *obj, int32_t width, int32_t height) {
+	struct Output *output = data;
+	output->real.width = width;
+	output->real.height = height;
+}
+
 static void output_handle_wl_output(void *data, struct river_output_v1 *obj, uint32_t name) {}
 
 const struct river_output_v1_listener river_output_listener = {
@@ -194,10 +204,25 @@ static void seat_handle_pointer_enter(void *data, struct river_seat_v1 *obj, str
 	window->space->focused = window;
 }
 
+static void seat_handle_pointer_position(void *data, struct river_seat_v1 *obj, int32_t x, int32_t y) {
+	if (!focus_follows_pointer)
+		return;
+	struct Seat *seat = data;
+	struct Output *o, *output = NULL;
+	wl_list_for_each(o, &wm.outputs, link) {
+		if (o->real.x <= x && o->real.x + o->real.width > x &&
+				o->real.y <= y && o->real.y + o->real.height > y) {
+			output = o;
+			break;
+		}
+	}
+	if (output != NULL)
+		seat->focused = output->active;
+}
+
 static void seat_handle_op_delta(void *data, struct river_seat_v1 *obj, int32_t dx, int32_t dy) {}
 static void seat_handle_op_release(void *data, struct river_seat_v1 *obj) {}
 static void seat_handle_pointer_leave(void *data, struct river_seat_v1 *obj) {}
-static void seat_handle_pointer_position(void *data, struct river_seat_v1 *obj, int32_t x, int32_t y) {}
 static void seat_handle_shell_surface_interaction(void *data, struct river_seat_v1 *obj, struct river_shell_surface_v1 *river_shell_surface) {}
 static void seat_handle_wl_seat(void *data, struct river_seat_v1 *obj, uint32_t id) {}
 
