@@ -230,7 +230,7 @@ extern void manage_window_deferred(struct Window *window) {
 		river_window_v1_close(window->obj);
 		window->close = false;
 	}
-	if (window->fullscreen) {
+	if (window->enter_fullscreen) {
 		struct Space *space = window->space;
 		if (space->output != NULL &&
 				space->output->active == space) {
@@ -238,11 +238,13 @@ extern void manage_window_deferred(struct Window *window) {
 			river_window_v1_fullscreen(window->obj,
 					space->output->obj);
 		}
-		window->fullscreen = false;
+		window->fullscreen = true;
+		window->enter_fullscreen = false;
 	}
 	if (window->exit_fullscreen) {
 		river_window_v1_exit_fullscreen(window->obj);
 		river_window_v1_inform_not_fullscreen(window->obj);
+		window->fullscreen = false;
 		window->exit_fullscreen = false;
 	}
 }
@@ -292,6 +294,11 @@ extern void manage_space(struct Space *space) {
 	wl_list_for_each(window, &wm.windows, link) {
 		if (window->space != output->active || !valid_rect(window->layout))
 			continue;
+		if (window->fullscreen && window->space->focused != window) {
+			river_window_v1_exit_fullscreen(window->obj);
+			river_window_v1_inform_not_fullscreen(window->obj);
+			window->fullscreen = false;
+		}
 		river_window_v1_use_ssd(window->obj);
 		river_window_v1_set_tiled(window->obj, 15);
 		river_window_v1_propose_dimensions(window->obj,

@@ -62,11 +62,12 @@ struct Window {
 	struct river_node_v1 *node;
 
 	bool maximized;  // The window has been inform_maximized
+	bool fullscreen; // The window is fullscreen
 
 	// Deferred tasks for the manage sequence
 	bool set_capabilities;  // window_v1.set_capabilities
 	bool close;             // window_v1.close
-	bool fullscreen;        // window_v1.inform_fullscreen
+	bool enter_fullscreen;  // window_v1.inform_fullscreen
 	bool exit_fullscreen;   // window_v1.inform_not_fullscreen
 
 	// Information for the render sequence

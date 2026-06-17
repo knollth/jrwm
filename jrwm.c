@@ -145,7 +145,7 @@ static void window_handle_closed(void *data, struct river_window_v1 *obj) {
 
 static void window_handle_fullscreen_requested(void *data, struct river_window_v1 *obj, struct river_output_v1 *river_output) {
 	struct Window *window = data;
-	window->fullscreen = true;
+	window->enter_fullscreen = true;
 }
 
 static void window_handle_exit_fullscreen_requested(void *data, struct river_window_v1 *obj) {
