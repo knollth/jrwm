@@ -237,8 +237,8 @@ extern void manage_window_deferred(struct Window *window) {
 			river_window_v1_inform_fullscreen(window->obj);
 			river_window_v1_fullscreen(window->obj,
 					space->output->obj);
+			window->fullscreen = true;
 		}
-		window->fullscreen = true;
 		window->enter_fullscreen = false;
 	}
 	if (window->exit_fullscreen) {
