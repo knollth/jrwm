@@ -87,6 +87,7 @@ struct Binddef binds[] = {
 	{super|alt,   XKB_KEY_l, binding_activate_next_space,      {0}},
 	{super,       XKB_KEY_o, binding_activate_next_idle_space, {0}},
 	{super|ctrl,  XKB_KEY_o, binding_activate_prev_idle_space, {0}},
+	{super|shift, XKB_KEY_f, binding_toggle_fullscreen, {0}},
 
 	// Bindings to refer to spaces by number; best used with static_spaces = 9
 	{super,       XKB_KEY_1, binding_activate_space, {.i = 1}},
