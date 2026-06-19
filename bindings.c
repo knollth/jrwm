@@ -110,6 +110,16 @@ extern void binding_close(struct Seat *seat, union Arg arg) {
 		seat->focused->focused->close = true;
 }
 
+extern void binding_toggle_fake_fullscreen(struct Seat *seat, union Arg arg) {
+	struct Window *window = seat->focused->focused;
+	if (window == NULL)
+		return;
+	if (window->fake_fullscreen)
+		window->exit_fake_fullscreen = true;
+	else
+		window->enter_fake_fullscreen = true;
+}
+
 extern void binding_toggle_monocle(struct Seat *seat, union Arg arg) {
 	struct Space *space = seat->focused;
 	if (space->layout != monocle_layout)

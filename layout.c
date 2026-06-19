@@ -230,6 +230,16 @@ extern void manage_window_deferred(struct Window *window) {
 		unfullscreen_window(window);
 		window->exit_fullscreen = false;
 	}
+	if (window->enter_fake_fullscreen) {
+		river_window_v1_inform_fullscreen(window->obj);
+		window->fake_fullscreen = true;
+    	window->enter_fake_fullscreen = false;
+	}
+	if (window->exit_fake_fullscreen) {
+		river_window_v1_inform_not_fullscreen(window->obj);
+		window->fake_fullscreen = false;
+    	window->exit_fake_fullscreen = false;
+	}
 }
 
 // Per-Space focus is technically just internal bookkeeping; this function
