@@ -240,7 +240,12 @@ extern void binding_activate_next_busy_space(struct Seat *seat, union Arg arg) {
 }
 
 extern void binding_activate_next_idle_space(struct Seat *seat, union Arg arg) {
-	activate_space(seat, next_space(seat->focused, idle_space));
+	struct Space *space = next_space(seat->focused, idle_space);
+	if (space == NULL) {
+		space = create_space();
+		wl_list_insert(wm.spaces.prev, &space->link);
+	}
+	activate_space(seat, space);
 }
 
 extern void binding_activate_next_space(struct Seat *seat, union Arg arg) {
@@ -252,7 +257,12 @@ extern void binding_activate_prev_busy_space(struct Seat *seat, union Arg arg) {
 }
 
 extern void binding_activate_prev_idle_space(struct Seat *seat, union Arg arg) {
-	activate_space(seat, prev_space(seat->focused, idle_space));
+	struct Space *space = prev_space(seat->focused, idle_space);
+	if (space == NULL) {
+		space = create_space();
+		wl_list_insert(&wm.spaces, &space->link);
+	}
+	activate_space(seat, space);
 }
 
 extern void binding_activate_prev_space(struct Seat *seat, union Arg arg) {
@@ -262,6 +272,23 @@ extern void binding_activate_prev_space(struct Seat *seat, union Arg arg) {
 // Move the currently focused Window to the nth Space
 extern void binding_move_to_space(struct Seat *seat, union Arg arg) {
 	move_to_space(seat->focused->focused, nth_space(arg.i));
+}
+
+extern void binding_move_to_next_space(struct Seat *seat, union Arg arg) {
+	move_to_space(seat->focused->focused, next_space(seat->focused, any_space));
+}
+
+extern void binding_move_to_prev_space(struct Seat *seat, union Arg arg) {
+	move_to_space(seat->focused->focused, prev_space(seat->focused, any_space));
+}
+
+extern void binding_move_to_next_idle_space(struct Seat *seat, union Arg arg) {
+	struct Space *space = next_space(seat->focused, idle_space);
+	if (space == NULL) {
+		space = create_space();
+		wl_list_insert(wm.spaces.prev, &space->link);
+	}
+	move_to_space(seat->focused->focused, space);
 }
 
 

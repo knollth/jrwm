@@ -170,13 +170,21 @@ extern void binding_focus_prev(struct Seat *, union Arg);
 extern void binding_move_next(struct Seat *, union Arg);
 extern void binding_move_prev(struct Seat *, union Arg);
 
+// Bindings for relative movement around spaces
+// A "busy" space is one with any windows.  An "idle" space is one which has no
+// windows and is not active on any output.
+extern void binding_activate_next_space(struct Seat *, union Arg);
+extern void binding_activate_prev_space(struct Seat *, union Arg);
 extern void binding_activate_next_busy_space(struct Seat *, union Arg);
 extern void binding_activate_prev_busy_space(struct Seat *, union Arg);
 extern void binding_activate_next_idle_space(struct Seat *, union Arg);
 extern void binding_activate_prev_idle_space(struct Seat *, union Arg);
-extern void binding_activate_next_space(struct Seat *, union Arg);
-extern void binding_activate_prev_space(struct Seat *, union Arg);
 
+extern void binding_move_to_next_space(struct Seat *, union Arg);
+extern void binding_move_to_prev_space(struct Seat *, union Arg);
+extern void binding_move_to_next_idle_space(struct Seat *, union Arg);
+
+// Bindings for statically-numbered spaces
 extern void binding_activate_space(struct Seat *, union Arg);
 extern void binding_move_to_space(struct Seat *, union Arg);
 
