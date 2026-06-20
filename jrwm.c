@@ -35,7 +35,25 @@ struct river_xkb_bindings_v1 *xkb_bindings_v1;
 struct river_layer_shell_v1 *layer_shell_v1;
 
 
-// Utility functions for the rest of the binary
+// Utility functions for this file
+
+// Place this Output in wm.outputs based on its x/y/width/height position
+// Note that river guarantees non-overlapping Outputs
+static void reorder_output(struct Output *output) {
+	wl_list_remove(&output->link);
+	struct Output *o;
+	struct wl_list *location = &wm.outputs;
+	wl_list_for_each(o, &wm.outputs, link) {
+		if (o->real.x > output->real.x + output->real.width)
+			break;
+		if (o->real.y > output->real.y + output->real.height)
+			break;
+		location = &o->link;
+	}
+	wl_list_insert(location, &output->link);
+}
+
+// Utility functions for the rest of the binary (should be in a separate file?)
 
 // An "idle" space has no windows and is not active on any Outputs
 extern bool idle_space(struct Space *space) {
@@ -110,12 +128,14 @@ static void output_handle_position(void *data, struct river_output_v1 *obj, int3
 	struct Output *output = data;
 	output->real.x = x;
 	output->real.y = y;
+	reorder_output(output);
 }
 
 static void output_handle_dimensions(void *data, struct river_output_v1 *obj, int32_t width, int32_t height) {
 	struct Output *output = data;
 	output->real.width = width;
 	output->real.height = height;
+	reorder_output(output);
 }
 
 static void output_handle_wl_output(void *data, struct river_output_v1 *obj, uint32_t name) {}
