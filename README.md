@@ -1,4 +1,4 @@
-# JrWM - A Junior Window Manager
+# Personal Fork of jpco's JrWM - A Junior Window Manager
 
 _(Alternatively, jpco's river window manager)_
 
