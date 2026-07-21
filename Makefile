@@ -1,6 +1,6 @@
 # Basic make variables.
 
-CC	= gcc
+CC	= clang
 INSTALL	= /usr/bin/install -c -s
 MKDIR_P	= /usr/bin/mkdir -p
 
